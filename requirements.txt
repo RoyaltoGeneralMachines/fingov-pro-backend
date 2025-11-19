@@ -6,5 +6,7 @@ requests
 pydantic
 email-validator
 python-jose[cryptography]
+pydantic-settings
+
 
 
