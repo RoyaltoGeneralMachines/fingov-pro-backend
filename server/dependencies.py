@@ -9,7 +9,7 @@ def require_role(role: str):
 
 from fastapi import Header, HTTPException, Depends
 from jose import jwt, JWTError
-from .config import settings
+from config import settings
 
 
 def get_current_user(authorization: str = Header(None)):
@@ -22,3 +22,4 @@ def get_current_user(authorization: str = Header(None)):
         return payload
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
