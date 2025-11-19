@@ -67,6 +67,9 @@ class TemplatePayload(BaseModel):
     template_name: str
     variables: Optional[dict]
 
+class TemplateGenericPayload(BaseModel):
+        data: Optional[dict]
+
 
 # -------------------------
 # SYNC MODELS
@@ -96,3 +99,4 @@ class WhatsAppMessagePayload(BaseModel):
 class WhatsAppTemplatePayload(BaseModel):
     template_id: str
     parameters: List[str]
+
