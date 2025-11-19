@@ -13,8 +13,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, R
 from fastapi.responses import JSONResponse
 from db import get_conn
 from utils import send_whatsapp_message
-from main import get_current_user, require_role  # import dependency helpers
-from typing import Optional
+from dependencies import get_current_user, require_role  # import dependency helpersfrom typing import Optional
 
 router = APIRouter()
 BASE_UPLOAD_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "uploads")
@@ -124,3 +123,4 @@ def send_whatsapp(
     if not sent_ok:
         raise HTTPException(500, "Failed to deliver message via gateway")
     return {"status":"ok", "message":"sent", "file_path": file_path}
+
