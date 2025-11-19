@@ -80,6 +80,12 @@ class SyncClientPayload(BaseModel):
     version: Optional[str]
     data: Optional[dict]
 
+class SyncPushPayload(BaseModel):
+        data: Optional[dict]
+
+class SyncPullPayload(BaseModel):
+        data: Optional[dict]
+
 
 class SyncResponse(BaseModel):
     status: str
@@ -99,4 +105,5 @@ class WhatsAppMessagePayload(BaseModel):
 class WhatsAppTemplatePayload(BaseModel):
     template_id: str
     parameters: List[str]
+
 
