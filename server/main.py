@@ -23,8 +23,6 @@ app.add_middleware(
 init_db()
 
 # ---- AUTH HELPERS ----
-from utils import verify_jwt_token
-
 # ---- ROUTERS ----
 app.include_router(auth_router, prefix="/auth")
 app.include_router(otp_router, prefix="/auth")
@@ -38,4 +36,5 @@ app.include_router(wa_router, prefix="")
 @app.get("/")
 def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
+
 
