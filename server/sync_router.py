@@ -9,7 +9,7 @@ router = APIRouter()
 
 # push handler
 @router.post("/sync/push")
-def sync_push(payload: SyncPushPayload, current_user: Dict = Depends(lambda: None)):
+def sync_push(payload: SyncPushPayload, current_user: dict = Depends(lambda: None)):
     device_id = payload.device_id
     table = payload.table
     items = payload.items or []
@@ -40,7 +40,7 @@ def sync_push(payload: SyncPushPayload, current_user: Dict = Depends(lambda: Non
     return {"applied": applied}
 
 @router.post("/sync/pull")
-def sync_pull(payload: SyncPullPayload, current_user: Dict = Depends(lambda: None)):
+def sync_pull(payload: SyncPullPayload, current_user: dict = Depends(lambda: None)):
     since = payload.since or '1970-01-01T00:00:00Z'
     conn = get_conn(); cur = conn.cursor()
     res = {}
@@ -59,3 +59,4 @@ def sync_pull(payload: SyncPullPayload, current_user: Dict = Depends(lambda: Non
             res[t] = []
     conn.close()
     return res
+
