@@ -25,18 +25,6 @@ init_db()
 # ---- AUTH HELPERS ----
 from utils import verify_jwt_token
 
-def get_current_user(token: str = Depends(verify_jwt_token)):
-    if not token:
-        raise HTTPException(401, "Invalid or missing token")
-    return token
-
-def require_role(role: str):
-    def checker(user=Depends(get_current_user)):
-        if user.get("role") != role:
-            raise HTTPException(403, "Unauthorized")
-        return user
-    return checker
-
 # ---- ROUTERS ----
 app.include_router(auth_router, prefix="/auth")
 app.include_router(otp_router, prefix="/auth")
@@ -50,3 +38,4 @@ app.include_router(wa_router, prefix="")
 @app.get("/")
 def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
+
