@@ -1,7 +1,7 @@
 # otp_router.py
 import datetime
 from fastapi import APIRouter, HTTPException, Request
-from models import OTPSendPayload, OTPVerifyPayload
+from models import OTPSendRequest, OTPVerifyRequest
 from db import get_conn
 from utils import generate_otp, hash_password, send_whatsapp_message, send_email, hash_password as hp, verify_password
 from passlib.context import CryptContext
@@ -35,7 +35,7 @@ def _record(phone):
     _phone_counters[phone]['day'].append(t)
 
 @router.post("/auth/send_otp")
-def send_otp(payload: OTPSendPayload, request: Request=None):
+def send_otp(payload: OTPSendRequest, request: Request=None):
     username = payload.username; phone = payload.phone
     if not username or not phone:
         raise HTTPException(400, "username & phone required")
@@ -67,7 +67,7 @@ def send_otp(payload: OTPSendPayload, request: Request=None):
     raise HTTPException(500, "Failed to deliver OTP")
 
 @router.post("/auth/verify_otp")
-def verify_otp(payload: OTPVerifyPayload, request: Request=None):
+def verify_otp(payload: OTPVerifyRequest, request: Request=None):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT * FROM password_otps WHERE username = ? AND phone = ? ORDER BY id DESC LIMIT 1", (payload.username, payload.phone))
     row = cur.fetchone()
@@ -85,3 +85,4 @@ def verify_otp(payload: OTPVerifyPayload, request: Request=None):
     cur.execute("DELETE FROM password_otps WHERE username = ? AND phone = ?", (payload.username, payload.phone))
     conn.commit(); conn.close()
     return {"status":"ok", "message":"Password reset successful"}
+
