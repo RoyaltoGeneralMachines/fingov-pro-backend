@@ -9,6 +9,7 @@ Requires Authorization header (Bearer) for protected operations.
 import os
 import datetime
 import uuid
+from typing import Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from db import get_conn
@@ -123,4 +124,5 @@ def send_whatsapp(
     if not sent_ok:
         raise HTTPException(500, "Failed to deliver message via gateway")
     return {"status":"ok", "message":"sent", "file_path": file_path}
+
 
