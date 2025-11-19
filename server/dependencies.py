@@ -1,4 +1,11 @@
 # server/dependencies.py
+
+def require_role(role: str):
+        def checker(user=Depends(get_current_user)):
+                    if user.get("role") != role:
+                                    raise HTTPException(403, "Unauthorized")
+                                return user
+                return checker
 from fastapi import Header, HTTPException, Depends
 from jose import jwt, JWTError
 from .config import settings
@@ -23,3 +30,4 @@ def get_db():
         yield conn
     finally:
         conn.close()
+
