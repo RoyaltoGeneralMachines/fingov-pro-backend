@@ -2,13 +2,13 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from db import init_db
-from auth_router import router as auth_router
-from otp_router import router as otp_router
-from template_router import router as template_router
-from partners_router import router as partners_router
-from sync_router import router as sync_router
-from wa_router import router as wa_router
-from server.version_admin_router import router as version_admin_router   # ⭐ NEW
+from .auth_router import router as auth_router
+from .otp_router import router as otp_router
+from .template_router import router as template_router
+from .partners_router import router as partners_router
+from .sync_router import router as sync_router
+from .wa_router import router as wa_router
+from .version_admin_router import router as version_admin_router   # ⭐ NEW
 
 app = FastAPI(title="FINGOV PRO CLOUD SERVER", version="2.0")
 
@@ -24,7 +24,7 @@ app.add_middleware(
 init_db()
 
 # ---- AUTH HELPERS ----
-from utils import verify_jwt_token
+from .utils import verify_jwt_token
 
 def get_current_user(token: str = Depends(verify_jwt_token)):
     if not token:
@@ -52,3 +52,4 @@ app.include_router(version_admin_router, prefix="/version-admin")
 @app.get("/")
 def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
+
