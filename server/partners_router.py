@@ -1,6 +1,6 @@
 # partners_router.py
 from fastapi import APIRouter, Depends
-from db import get_conn
+from .db import get_conn
 import datetime
 
 router = APIRouter()
@@ -24,4 +24,5 @@ def upsert_partner(payload: dict, current_user: dict = Depends(lambda: None)):
                 (code, name, login, mobile, now))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
