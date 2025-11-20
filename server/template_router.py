@@ -1,8 +1,8 @@
 # template_router.py
 from fastapi import APIRouter, HTTPException, Depends, Request
-from models import TemplateGenericPayload
-from db import get_conn
-from utils import *
+from .models import TemplateGenericPayload
+from .db import get_conn
+from .utils import *
 import json
 import datetime
 from typing import Dict
@@ -80,3 +80,4 @@ def set_template_generic(payload: TemplateGenericPayload, request: Request=None,
     value = {"template": tpl, "version": new_ver, "updated_at": now, "updated_by": current_user.get("username") if current_user else "admin"}
     set_app_setting_value(storage_key, json.dumps(value))
     return {"status":"ok", "key": key, "version": new_ver, "updated_at": now}
+
