@@ -1,7 +1,7 @@
 # main.py
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from db import init_db
+from .db import init_db
 from .auth_router import router as auth_router
 from .otp_router import router as otp_router
 from .template_router import router as template_router
@@ -52,4 +52,5 @@ app.include_router(version_admin_router, prefix="/version-admin")
 @app.get("/")
 def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
+
 
