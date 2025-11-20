@@ -1,0 +1,6 @@
+{
+  "latest_version": "2.0.1",
+  "mandatory": false,
+  "download_url": "https://yourserver.com/downloads/FINGOV_PRO_Setup.exe",
+  "release_notes": "Bug fixes, UI improvements, better sync stability."
+}
