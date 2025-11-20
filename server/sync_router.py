@@ -1,7 +1,7 @@
 # sync_router.py
 from fastapi import APIRouter, HTTPException, Depends
-from models import SyncPushPayload, SyncPullPayload
-from db import get_conn
+from .models import SyncPushPayload, SyncPullPayload
+from .db import get_conn
 import datetime
 import uuid
 
@@ -59,4 +59,5 @@ def sync_pull(payload: SyncPullPayload, current_user: dict = Depends(lambda: Non
             res[t] = []
     conn.close()
     return res
+
 
