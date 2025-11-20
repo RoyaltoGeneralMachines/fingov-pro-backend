@@ -1,9 +1,9 @@
 # otp_router.py
 import datetime
 from fastapi import APIRouter, HTTPException, Request
-from models import OTPSendRequest, OTPVerifyRequest
-from db import get_conn
-from utils import generate_otp, hash_password, send_whatsapp_message, send_email, hash_password as hp, verify_password
+from .models import OTPSendRequest, OTPVerifyRequest
+from .db import get_conn
+from .utils import generate_otp, hash_password, send_whatsapp_message, send_email, hash_password as hp, verify_password
 from passlib.context import CryptContext
 
 pwdctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -85,4 +85,5 @@ def verify_otp(payload: OTPVerifyRequest, request: Request=None):
     cur.execute("DELETE FROM password_otps WHERE username = ? AND phone = ?", (payload.username, payload.phone))
     conn.commit(); conn.close()
     return {"status":"ok", "message":"Password reset successful"}
+
 
