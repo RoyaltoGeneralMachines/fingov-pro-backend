@@ -17,7 +17,7 @@ def create_access_token(data: Dict, expires_minutes: int = None):
     token = jwt.encode(to_encode, SECRET, algorithm=ALGORITHM)
     return token
 
-@router.post("/auth/register")
+@router.post("/register")
 def register(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']
@@ -36,7 +36,7 @@ def register(payload: LoginPayload, request: Request=None):
     conn.commit(); conn.close()
     return {"status":"ok", "username": payload.username}
 
-@router.post("/auth/login")
+@router.post("/login")
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))
@@ -55,7 +55,7 @@ def login(payload: LoginPayload, request: Request=None):
     conn.commit(); conn.close()
     return {"access_token": access_token, "refresh_token": refresh_token, "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES*60}
 
-@router.post("/auth/refresh")
+@router.post("/refresh")
 def refresh_token(payload: RefreshPayload):
     token = payload.refresh_token
     conn = get_conn(); cur = conn.cursor()
@@ -75,7 +75,7 @@ def refresh_token(payload: RefreshPayload):
     conn.close()
     return {"access_token": access_token, "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES*60}
 
-@router.post("/auth/logout")
+@router.post("/logout")
 def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (payload.refresh_token,))
