@@ -34,7 +34,7 @@ def _record(phone):
     _phone_counters[phone]['hour'].append(t)
     _phone_counters[phone]['day'].append(t)
 
-@router.post("/auth/send_otp")
+@router.post("/send_otp")
 def send_otp(payload: OTPSendRequest, request: Request=None):
     username = payload.username; phone = payload.phone
     if not username or not phone:
@@ -66,7 +66,7 @@ def send_otp(payload: OTPSendRequest, request: Request=None):
         return {"status":"ok", "message":"OTP sent via email fallback."}
     raise HTTPException(500, "Failed to deliver OTP")
 
-@router.post("/auth/verify_otp")
+@router.post("/verify_otp")
 def verify_otp(payload: OTPVerifyRequest, request: Request=None):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT * FROM password_otps WHERE username = ? AND phone = ? ORDER BY id DESC LIMIT 1", (payload.username, payload.phone))
