@@ -3,6 +3,7 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 import os
+from psycopg2.extras import RealDictCursor
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
@@ -20,8 +21,7 @@ def get_conn():
     return engine.raw_connection()
 def init_db():
     conn = get_conn()
-    cur = conn.cursor()
-    
+    cur = conn.cursor(cursor_factory=RealDictCursor)    
     # ---- USERS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -155,6 +155,7 @@ def init_db():
     
 
     conn.close()
+
 
 
 
