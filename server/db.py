@@ -17,8 +17,7 @@ engine = create_engine(
 )
 
 def get_conn():
-    return engine.connect()
-
+    return engine.raw_connection()
 def init_db():
     conn = get_conn()
     
@@ -152,4 +151,5 @@ def init_db():
     """))
     conn.commit()
     
+
     conn.close()
