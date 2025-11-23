@@ -8,6 +8,8 @@ email-validator
 python-jose[cryptography]
 pydantic-settings
 python-multipart
+sqlalchemy
+psycopg2-binary
 
 
 
