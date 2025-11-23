@@ -20,7 +20,7 @@ def get_conn():
     return engine.raw_connection()
 def init_db():
     conn = get_conn()
-cur = conn.cursor()
+    cur = conn.cursor()
     
     # ---- USERS TABLE ----
     cur.execute("""
@@ -155,5 +155,6 @@ cur = conn.cursor()
     
 
     conn.close()
+
 
 
