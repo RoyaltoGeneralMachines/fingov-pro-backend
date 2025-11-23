@@ -38,9 +38,12 @@ app.include_router(version_admin_router, prefix="/version-admin")
 def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
 
-@app.get("/auth")
+@app.post("/auth")
+41
+
 def auth_status():
         return {"status": "ok", "message": "Authentication service is running"}
+
 
 
 
