@@ -20,9 +20,10 @@ def get_conn():
     return engine.raw_connection()
 def init_db():
     conn = get_conn()
+        cur = conn.cursor()
     
     # ---- USERS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
@@ -36,7 +37,7 @@ def init_db():
     conn.commit()
     
     # ---- OTP TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS otp (
             id SERIAL PRIMARY KEY,
             phone TEXT UNIQUE NOT NULL,
@@ -47,7 +48,7 @@ def init_db():
     conn.commit()
     
     # ---- CLIENTS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS clients (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -62,7 +63,7 @@ def init_db():
     conn.commit()
     
     # ---- PORTFOLIOS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS portfolios (
             id SERIAL PRIMARY KEY,
             client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -77,7 +78,7 @@ def init_db():
     conn.commit()
     
     # ---- TRANSACTIONS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
             id SERIAL PRIMARY KEY,
             client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -90,7 +91,7 @@ def init_db():
     conn.commit()
     
     # ---- FINANCIAL_PLANS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS financial_plans (
             id SERIAL PRIMARY KEY,
             client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -104,7 +105,7 @@ def init_db():
     conn.commit()
     
     # ---- NOTIFICATIONS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -116,7 +117,7 @@ def init_db():
     conn.commit()
     
     # ---- MARKET_DATA TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS market_data (
             id SERIAL PRIMARY KEY,
             symbol TEXT NOT NULL,
@@ -128,7 +129,7 @@ def init_db():
     conn.commit()
     
     # ---- REPORTS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS reports (
             id SERIAL PRIMARY KEY,
             client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
@@ -140,7 +141,7 @@ def init_db():
     conn.commit()
     
     # ---- SYNC_LOGS TABLE ----
-    conn.execute(text("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS sync_logs (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -150,6 +151,8 @@ def init_db():
         )
     """))
     conn.commit()
+        cur.close()
     
 
     conn.close()
+
