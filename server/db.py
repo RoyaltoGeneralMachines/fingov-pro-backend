@@ -151,10 +151,11 @@ def init_db():
         )
     """)
     conn.commit()
-        cur.close()
+    cur.close()
     
 
     conn.close()
+
 
 
 
