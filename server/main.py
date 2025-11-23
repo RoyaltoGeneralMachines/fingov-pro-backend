@@ -39,10 +39,10 @@ def root():
     return {"status": "ok", "server": "FINGOV PRO CLOUD 2.0"}
 
 @app.post("/auth")
-41
 
 def auth_status():
         return {"status": "ok", "message": "Authentication service is running"}
+
 
 
 
