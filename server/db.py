@@ -33,7 +33,7 @@ def init_db():
             device_id TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- OTP TABLE ----
@@ -44,7 +44,7 @@ def init_db():
             otp_code TEXT NOT NULL,
             expires_at TIMESTAMP NOT NULL
         )
-    """))
+    """)
     conn.commit()
     
     # ---- CLIENTS TABLE ----
@@ -59,7 +59,7 @@ def init_db():
             address TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- PORTFOLIOS TABLE ----
@@ -74,7 +74,7 @@ def init_db():
             current_price REAL,
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- TRANSACTIONS TABLE ----
@@ -87,7 +87,7 @@ def init_db():
             description TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- FINANCIAL_PLANS TABLE ----
@@ -101,7 +101,7 @@ def init_db():
             status TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- NOTIFICATIONS TABLE ----
@@ -113,7 +113,7 @@ def init_db():
             is_read BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- MARKET_DATA TABLE ----
@@ -125,7 +125,7 @@ def init_db():
             volume BIGINT,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- REPORTS TABLE ----
@@ -137,7 +137,7 @@ def init_db():
             file_path TEXT NOT NULL,
             generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
     
     # ---- SYNC_LOGS TABLE ----
@@ -149,12 +149,13 @@ def init_db():
             status TEXT NOT NULL,
             synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """))
+    """)
     conn.commit()
         cur.close()
     
 
     conn.close()
+
 
 
 
