@@ -1,27 +1,57 @@
 # db.py
 # Central DB management for Fingov Pro Cloud Server
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
 import os
+import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# -------------------------
+# DATABASE CONFIG
+# -------------------------
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+# Create SQLAlchemy Engine (used mainly for ORM or pooled connections)
+engine = None
+if DATABASE_URL:
+    engine = create_engine(
+        DATABASE_URL,
+        poolclass=StaticPool,
+        connect_args={"connect_timeout": 10}
+    )
 
-# Create engine with connection pooling
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=StaticPool,
-    connect_args={"connect_timeout": 10}
-)
+
+# -------------------------
+# CONNECTION HANDLERS
+# -------------------------
 
 def get_conn():
-    return engine.raw_connection()
+    """
+    Get a raw database connection.
+    Uses DATABASE_URL if available (production),
+    otherwise falls back to local PostgreSQL connection (development).
+    """
+    if DATABASE_URL:
+        return engine.raw_connection()
+    else:
+        return psycopg2.connect(
+            host="localhost",
+            dbname="yourdb",
+            user="youruser",
+            password="yourpass",
+            cursor_factory=RealDictCursor
+        )
+
+
+# -------------------------
+# INITIALIZE DATABASE
+# -------------------------
+
 def init_db():
     conn = get_conn()
-    cur = conn.cursor(cursor_factory=RealDictCursor)    
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
     # ---- USERS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -151,13 +181,6 @@ def init_db():
         )
     """)
     conn.commit()
-    cur.close()
     
-
+    cur.close()
     conn.close()
-
-
-
-
-
-
