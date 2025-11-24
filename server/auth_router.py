@@ -22,15 +22,16 @@ def register(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']
-    if C== 0:    
+    if C== 0:
         allow = True
     if not allow:
         raise HTTPException(403, "Registration disabled")
-            if cur.execute("SELECT id FROM users WHERE username = ?", (payload.username,)).fetchone():
-        raise HTTPException(400, "User exists")    now = datetime.datetime.utcnow().isoformat()
+    if cur.execute("SELECT id FROM users WHERE username = ?", (payload.username,)).fetchone():
+        raise HTTPException(400, "User exists")
+    now = datetime.datetime.utcnow().isoformat()
     role = "ADMIN" if c==0 else "AGENT"
     cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES(?,?,?,?,?)",
-                (payload.username, ph, payload.username, role, now))
+        (payload.username, ph, payload.username, role, now))
     conn.commit(); conn.close()
     return {"status":"ok", "username": payload.username}
 
@@ -38,7 +39,7 @@ def register(payload: LoginPayload, request: Request=None):
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))
-        row = cur.fetchone()if not row or not verify_password(payload.password, row['password_hash']):
+    row = cur.fetchone()if not row or not verify_password(payload.password, row['password_hash']):
         raise HTTPException(401, "Invalid credentials")
     user = dict(row)
     user_data = {"sub": user['username'], "role": user['role'], "user_id": user['id']}
@@ -47,7 +48,7 @@ def login(payload: LoginPayload, request: Request=None):
     issued = datetime.datetime.utcnow().isoformat()
     exp = (datetime.datetime.utcnow() + datetime.timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).isoformat()
     cur.execute("INSERT INTO refresh_tokens(user_id, token, issued_at, expires_at, device_id) VALUES(?,?,?,?,?)",
-                (user['id'], refresh_token, issued, exp, payload.device_id or ''))
+        (user['id'], refresh_token, issued, exp, payload.device_id or ''))
     cur.execute("UPDATE users SET last_login = ? WHERE id = ?", (issued, user['id']))
     conn.commit(); conn.close()
     return {"access_token": access_token, "refresh_token": refresh_token, "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES*60}
@@ -56,7 +57,8 @@ def login(payload: LoginPayload, request: Request=None):
 def refresh_token(payload: RefreshPayload):
     token = payload.refresh_token
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM refresh_tokens WHERE token = ? AND revoked = False", (token,))    r = cur.fetchone()
+    cur.execute("SELECT * FROM refresh_tokens WHERE token = ? AND revoked = False", (token,))
+    r = cur.fetchone()
     if not r:
         raise HTTPException(401, "Invalid refresh token")
     if r['expires_at'] < datetime.datetime.utcnow().isoformat():
@@ -75,13 +77,5 @@ def refresh_token(payload: RefreshPayload):
 def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))
-        conn.commit(); conn.close()return {"status":"ok"}
-
-
-
-
-
-
-
-
-
+    conn.commit(); conn.close()
+    return {"status":"ok"}
