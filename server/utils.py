@@ -1,4 +1,3 @@
-# utils.py
 import os
 import datetime
 import uuid
@@ -9,14 +8,19 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import requests
 from passlib.context import CryptContext
+import bcrypt
+import secrets
+import string
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# ============================================================
+# Configuration and Constants
+# ============================================================
 
-# configuration from env
-SECRET = os.environ.get("FINGOV_SECRET", "replace_in_prod")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+# environment or fallback defaults
+SECRET = os.environ.get("FINGOV_SECRET", "your-secret-key")
+ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 WHATSAPP_API_URL = os.environ.get("WHATSAPP_API_URL")
 WHATSAPP_API_TOKEN = os.environ.get("WHATSAPP_API_TOKEN")
@@ -27,20 +31,42 @@ EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", EMAIL_USER or "noreply@easyadvisor.in")
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def verify_password(plain: str, hashed: str) -> bool:
+# ============================================================
+# Security Utilities
+# ============================================================
+
+def hash_password(password: str) -> str:
+    """
+    Secure password hashing using bcrypt.
+    """
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    """
+    Verify a password against its hashed version.
+    """
     try:
-        return pwd_context.verify(plain, hashed)
+        return bcrypt.checkpw(password.encode(), hashed.encode())
     except Exception:
         return False
 
-def create_refresh_token():
-    return str(uuid.uuid4())
+def create_refresh_token(length: int = 64) -> str:
+    """
+    Generate a random secure refresh token.
+    """
+    return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
 
-def generate_otp(length=6):
-    return ''.join(str(random.randint(0,9)) for _ in range(length))
+def generate_otp(length=6) -> str:
+    """
+    Generate a numeric OTP (default length = 6).
+    """
+    return ''.join(str(random.randint(0, 9)) for _ in range(length))
+
+# ============================================================
+# WhatsApp Messaging
+# ============================================================
 
 def send_whatsapp_message(to_number: str, message: str, file_path: str = None) -> bool:
     if not to_number:
@@ -49,7 +75,7 @@ def send_whatsapp_message(to_number: str, message: str, file_path: str = None) -
         try:
             headers = {'Content-Type': 'application/json'}
             if WHATSAPP_API_TOKEN:
-                headers['Authorization'] = f'Bearer {WHATSAPP_API_TOKEN}'
+                headers['Authorization'] = f'Bearer {WHATSAPP_API_TOKEN}' 
             payload = {'to': to_number, 'message': message}
             if file_path:
                 payload['file_path'] = file_path
@@ -63,8 +89,16 @@ def send_whatsapp_message(to_number: str, message: str, file_path: str = None) -
     print(f"[WA MOCK] to={to_number} message={message} file={file_path}")
     return True
 
+# ============================================================
+# Email Sending
+# ============================================================
+
 def send_email(to_email: str, subject: str, body: str) -> bool:
+    """
+    Send an email via configured SMTP credentials.
+    """
     if not (EMAIL_HOST and EMAIL_USER and EMAIL_PASSWORD and EMAIL_PORT):
+        print("Email configuration missing.")
         return False
     try:
         msg = MIMEMultipart()
