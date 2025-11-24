@@ -1,57 +1,86 @@
 # db.py
 # Central DB management for Fingov Pro Cloud Server
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.pool import StaticPool
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from urllib.parse import urlparse
+from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
+
 
 # -------------------------
 # DATABASE CONFIG
 # -------------------------
-DATABASE_URL = os.environ.get("DATABASE_URL")
 
-# Create SQLAlchemy Engine (used mainly for ORM or pooled connections)
-engine = None
-if DATABASE_URL:
-    engine = create_engine(
-        DATABASE_URL,
-        poolclass=StaticPool,
-        connect_args={"connect_timeout": 10}
-    )
+# Default Render PostgreSQL connection (auto-connect if env var not set)
+DEFAULT_RENDER_DB = (
+    "postgresql://fingov_pro_db_user:"
+    "8331F1E5oXSItkRrJbFFmlJ5vR144iwl"
+    "@dpg-d4hdudili9vc73e562g0-a.oregon-postgres.render.com/"
+    "fingov_pro_db"
+)
+
+DATABASE_URL = os.environ.get("DATABASE_URL", DEFAULT_RENDER_DB)
+
+# SQLAlchemy Engine (for ORM or pooled access)
+engine = create_engine(
+    DATABASE_URL,
+    poolclass=StaticPool,
+    connect_args={"connect_timeout": 10},
+    echo=False
+)
 
 
 # -------------------------
-# CONNECTION HANDLERS
+# CONNECTION HANDLER
 # -------------------------
-
 def get_conn():
     """
-    Get a raw database connection.
-    Uses DATABASE_URL if available (production),
-    otherwise falls back to local PostgreSQL connection (development).
+    Establish a PostgreSQL database connection.
+    Connects to Render's PostgreSQL using DATABASE_URL,
+    with automatic fallback to local PostgreSQL if Render connection fails.
     """
-    if DATABASE_URL:
-        return engine.raw_connection()
-    else:
-        return psycopg2.connect(
-            host="localhost",
-            dbname="yourdb",
-            user="youruser",
-            password="yourpass",
-            cursor_factory=RealDictCursor
-        )
+
+    db_url = DATABASE_URL
+
+    # Validate URL
+    result = urlparse(db_url)
+    if not all([result.scheme, result.hostname, result.path]):
+        raise RuntimeError("Invalid DATABASE_URL. Check your Render connection string.")
+
+    try:
+        # Primary Render connection
+        conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        return conn
+
+    except Exception as e:
+        # Local fallback (developer use)
+        try:
+            return psycopg2.connect(
+                host="localhost",
+                dbname="fingov_local",
+                user="postgres",
+                password="postgres",
+                cursor_factory=RealDictCursor,
+            )
+        except Exception as fallback_error:
+            raise RuntimeError(
+                f"Database connection failed. Primary: {e}, Fallback: {fallback_error}"
+            )
 
 
 # -------------------------
-# INITIALIZE DATABASE
+# INITIALIZE DATABASE STRUCTURE
 # -------------------------
-
 def init_db():
+    """
+    Initializes all required tables if they don't exist.
+    Safe to run multiple times.
+    """
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    
+
     # ---- USERS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -60,12 +89,12 @@ def init_db():
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL,
             full_name TEXT NOT NULL,
-            device_id TEXT NOT NULL,
+            device_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
-    
+
     # ---- OTP TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS otp (
@@ -76,7 +105,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- CLIENTS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS clients (
@@ -91,7 +120,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- PORTFOLIOS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS portfolios (
@@ -106,7 +135,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- TRANSACTIONS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS transactions (
@@ -119,7 +148,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- FINANCIAL_PLANS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS financial_plans (
@@ -133,7 +162,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- NOTIFICATIONS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
@@ -145,7 +174,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- MARKET_DATA TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS market_data (
@@ -157,7 +186,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- REPORTS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS reports (
@@ -169,7 +198,7 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     # ---- SYNC_LOGS TABLE ----
     cur.execute("""
         CREATE TABLE IF NOT EXISTS sync_logs (
@@ -181,6 +210,6 @@ def init_db():
         )
     """)
     conn.commit()
-    
+
     cur.close()
     conn.close()
