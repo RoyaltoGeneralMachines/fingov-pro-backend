@@ -18,8 +18,8 @@ def create_access_token(data: Dict, expires_minutes: int = None):
     return token
 
 @router.post("/register")
+
 def register(payload: LoginPayload, request: Request=None):
-    conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']
     if c== 0:
@@ -27,10 +27,10 @@ def register(payload: LoginPayload, request: Request=None):
     if not allow:
         raise HTTPException(403, "Registration disabled")
     cur.execute("SELECT id FROM users WHERE username = $1", (payload.username,))
-        if cur.fetchone():
-            raise HTTPException(400, "User exists")
-    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES($1,$2,$3,$4,$5)",
-        (payload.username, hash_password(payload.password), payload.username, role, now))
+    row = cur.fetchone()
+    if row:
+        raise HTTPException(400, "User exists")
+    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES($1,$2,$3,$4,$5)", (payload.username, hash_password(payload.password), payload.username, "user", datetime.datetime.utcnow()))
     conn.commit(); conn.close()
     return {"status":"ok", "username": payload.username}
 
@@ -78,6 +78,7 @@ def logout(payload: RefreshPayload):
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = $1", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
 
