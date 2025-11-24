@@ -28,10 +28,11 @@ def register(payload: LoginPayload, request: Request=None):
         raise HTTPException(403, "Registration disabled")
     cur.execute("SELECT id FROM users WHERE username = %s", (payload.username,))
     row = cur.fetchone()
-    if row:        raise HTTPException(400, "User exists")
-    ph = hash_password(payload.password)
-    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES(%s,%s,%s,%s,%s)", (payload.username, ph, payload.username, "user", datetime.datetime.utcnow()))    return {"status":"ok", "username": payload.username}
-
+    if row:
+    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES(%s,%s,%s,%s,%s)", (payload.username, ph, payload.username, "user", datetime.datetime.utcnow()))
+    conn.commit()
+    conn.close()
+    return {"status": "ok", "username": payload.username}
 @router.post("/login")
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -76,6 +77,7 @@ def logout(payload: RefreshPayload):
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = $1", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
 
