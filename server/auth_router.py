@@ -29,10 +29,9 @@ def register(payload: LoginPayload, request: Request=None):
     if cur.execute("SELECT id FROM users WHERE username = $1", (payload.username,)).fetchone():
         raise HTTPException(400, "User exists")
     now = datetime.datetime.utcnow().isoformat()
-            ph = hash_password(payload.password)
     role = "ADMIN" if c==0 else "AGENT"
     cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES($1,$2,$3,$4,$5)",
-        (payload.username, ph, payload.username, role, now))
+        (payload.username, hash_password(payload.password), payload.username, role, now))
     conn.commit(); conn.close()
     return {"status":"ok", "username": payload.username}
 
@@ -80,6 +79,7 @@ def logout(payload: RefreshPayload):
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = $1", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
 
