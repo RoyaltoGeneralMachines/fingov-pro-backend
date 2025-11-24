@@ -26,11 +26,12 @@ def register(payload: LoginPayload, request: Request=None):
         allow = True
     if not allow:
         raise HTTPException(403, "Registration disabled")
-    if cur.execute("SELECT id FROM users WHERE username = ?", (payload.username,)).fetchone():
+    if cur.execute("SELECT id FROM users WHERE username = $1", (payload.username,)).fetchone():
         raise HTTPException(400, "User exists")
     now = datetime.datetime.utcnow().isoformat()
+        ph = hash_password(payload.password)
     role = "ADMIN" if c==0 else "AGENT"
-    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES(?,?,?,?,?)",
+    cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES($1,$2,$3,$4,$5)",
         (payload.username, ph, payload.username, role, now))
     conn.commit(); conn.close()
     return {"status":"ok", "username": payload.username}
@@ -38,7 +39,7 @@ def register(payload: LoginPayload, request: Request=None):
 @router.post("/login")
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))
+    cur.execute("SELECT * FROM users WHERE username = $1", (payload.username,))
     row = cur.fetchone()
     if not row or not verify_password(payload.password, row['password_hash']):        raise HTTPException(401, "Invalid credentials")
     user = dict(row)
@@ -47,9 +48,9 @@ def login(payload: LoginPayload, request: Request=None):
     refresh_token = create_refresh_token()
     issued = datetime.datetime.utcnow().isoformat()
     exp = (datetime.datetime.utcnow() + datetime.timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)).isoformat()
-    cur.execute("INSERT INTO refresh_tokens(user_id, token, issued_at, expires_at, device_id) VALUES(?,?,?,?,?)",
+    cur.execute("INSERT INTO refresh_tokens(user_id, token, issued_at, expires_at, device_id) VALUES($1,$2,$3,$4,$5)",
         (user['id'], refresh_token, issued, exp, payload.device_id or ''))
-    cur.execute("UPDATE users SET last_login = ? WHERE id = ?", (issued, user['id']))
+    cur.execute("UPDATE users SET last_login = $1 WHERE id = $2", (issued, user['id']))
     conn.commit(); conn.close()
     return {"access_token": access_token, "refresh_token": refresh_token, "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES*60}
 
@@ -57,13 +58,13 @@ def login(payload: LoginPayload, request: Request=None):
 def refresh_token(payload: RefreshPayload):
     token = payload.refresh_token
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM refresh_tokens WHERE token = ? AND revoked = False", (token,))
+    cur.execute("SELECT * FROM refresh_tokens WHERE token = $1 AND revoked = False", (token,))
     r = cur.fetchone()
     if not r:
         raise HTTPException(401, "Invalid refresh token")
     if r['expires_at'] < datetime.datetime.utcnow().isoformat():
         raise HTTPException(401, "Refresh token expired")
-    cur.execute("SELECT * FROM users WHERE id = ?", (r['user_id'],))
+    cur.execute("SELECT * FROM users WHERE id = $1", (r['user_id'],))
     u = cur.fetchone()
     if not u:
         raise HTTPException(401, "User not found")
@@ -76,8 +77,9 @@ def refresh_token(payload: RefreshPayload):
 @router.post("/logout")
 def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))
+    cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = $1", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
