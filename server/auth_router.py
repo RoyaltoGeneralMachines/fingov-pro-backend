@@ -1,3 +1,7 @@
+# auth_router.py
+# Authentication Router for Fingov Pro Cloud Server
+# Integrated with Render PostgreSQL (via db.py)
+
 import datetime
 import jwt
 from fastapi import APIRouter, HTTPException, Request
@@ -20,36 +24,39 @@ from .utils import (
 router = APIRouter()
 
 
-# ---------------- JWT CREATION ----------------
+# -------------------------
+# JWT Token Generation
+# -------------------------
 def create_access_token(data: Dict, expires_minutes: int = None) -> str:
     """
-    Create a signed JWT access token.
+    Generate a signed JWT access token.
     """
     now = datetime.datetime.utcnow()
     expire = now + datetime.timedelta(
         minutes=(expires_minutes or ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     payload = data.copy()
-    payload.update({
-        "iat": int(now.timestamp()),
-        "exp": int(expire.timestamp())
-    })
+    payload.update({"iat": int(now.timestamp()), "exp": int(expire.timestamp())})
     return jwt.encode(payload, SECRET, algorithm=ALGORITHM)
 
 
-# ---------------- REGISTER ----------------
+# -------------------------
+# USER REGISTRATION
+# -------------------------
 @router.post("/register")
 def register(payload: LoginPayload, request: Request = None):
     """
-    Create first user if table is empty; otherwise registration disabled.
+    Register a new user.
+    - The first user can register freely.
+    - After that, registration is disabled (controlled setup).
     """
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
-        cur.execute("SELECT COUNT(*) AS c FROM users")
-        c = cur.fetchone()["c"]
-        allow = (c == 0)
+        cur.execute("SELECT COUNT(*) AS count FROM users")
+        count = cur.fetchone()["count"]
+        allow = (count == 0)
         if not allow:
             raise HTTPException(status_code=403, detail="Registration disabled")
 
@@ -60,17 +67,19 @@ def register(payload: LoginPayload, request: Request = None):
         password_hash = hash_password(payload.password)
         cur.execute(
             """
-            INSERT INTO users (username, password_hash, full_name, role, created_at)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO users (username, password_hash, full_name, role, device_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
             (
                 payload.username,
                 password_hash,
                 payload.username,
                 "user",
+                getattr(payload, "device_id", "") or "",
                 datetime.datetime.utcnow(),
             ),
         )
+
         conn.commit()
         return {"status": "ok", "username": payload.username}
 
@@ -83,11 +92,13 @@ def register(payload: LoginPayload, request: Request = None):
         conn.close()
 
 
-# ---------------- LOGIN ----------------
+# -------------------------
+# USER LOGIN
+# -------------------------
 @router.post("/login")
 def login(payload: LoginPayload, request: Request = None):
     """
-    Authenticate user and issue tokens.
+    Authenticate user and issue access + refresh tokens.
     """
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -95,23 +106,36 @@ def login(payload: LoginPayload, request: Request = None):
     try:
         cur.execute("SELECT * FROM users WHERE username = %s", (payload.username,))
         user = cur.fetchone()
-
         if not user or not verify_password(payload.password, user["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        # Create tokens
         user_data = {
             "sub": user["username"],
             "role": user["role"],
             "user_id": user["id"],
         }
+
         access_token = create_access_token(user_data)
         refresh_token = create_refresh_token()
 
         issued_at = datetime.datetime.utcnow()
         expires_at = issued_at + datetime.timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
-        # Insert refresh token
+        # Ensure refresh_tokens table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                token TEXT UNIQUE NOT NULL,
+                issued_at TIMESTAMP NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                revoked BOOLEAN DEFAULT FALSE,
+                device_id TEXT
+            )
+        """)
+        conn.commit()
+
+        # Store refresh token
         cur.execute(
             """
             INSERT INTO refresh_tokens (user_id, token, issued_at, expires_at, device_id)
@@ -126,7 +150,7 @@ def login(payload: LoginPayload, request: Request = None):
             ),
         )
 
-        # Update user last login
+        # Update last login
         cur.execute(
             "UPDATE users SET last_login = %s WHERE id = %s",
             (issued_at, user["id"]),
@@ -149,11 +173,13 @@ def login(payload: LoginPayload, request: Request = None):
         conn.close()
 
 
-# ---------------- REFRESH ----------------
+# -------------------------
+# REFRESH TOKEN
+# -------------------------
 @router.post("/refresh")
 def refresh_token(payload: RefreshPayload):
     """
-    Validate refresh token and issue new access token.
+    Issue a new access token using a valid refresh token.
     """
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -164,10 +190,10 @@ def refresh_token(payload: RefreshPayload):
             (payload.refresh_token,),
         )
         token_row = cur.fetchone()
+
         if not token_row:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-        # Compare expiry correctly as datetime
         if token_row["expires_at"] < datetime.datetime.utcnow():
             raise HTTPException(status_code=401, detail="Refresh token expired")
 
@@ -181,7 +207,9 @@ def refresh_token(payload: RefreshPayload):
             "role": user["role"],
             "user_id": user["id"],
         }
+
         new_access_token = create_access_token(user_data)
+        conn.commit()
 
         return {
             "access_token": new_access_token,
@@ -189,6 +217,7 @@ def refresh_token(payload: RefreshPayload):
         }
 
     except DatabaseError as e:
+        conn.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
     finally:
@@ -196,11 +225,13 @@ def refresh_token(payload: RefreshPayload):
         conn.close()
 
 
-# ---------------- LOGOUT ----------------
+# -------------------------
+# LOGOUT / TOKEN REVOKE
+# -------------------------
 @router.post("/logout")
 def logout(payload: RefreshPayload):
     """
-    Revoke a refresh token.
+    Revoke a refresh token (logout).
     """
     conn = get_conn()
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -212,8 +243,9 @@ def logout(payload: RefreshPayload):
         )
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Token not found")
+
         conn.commit()
-        return {"status": "ok"}
+        return {"status": "ok", "message": "Logged out successfully"}
 
     except DatabaseError as e:
         conn.rollback()
