@@ -6,8 +6,7 @@ from typing import Dict
 from .models import LoginPayload, RefreshPayload
 from .db import get_conn
 from .utils import hash_password, verify_password, create_refresh_token, SECRET, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-
-router = APIRouter()
+from psycopg2.extras import RealDictCursorrouter = APIRouter()
 
 def create_access_token(data: Dict, expires_minutes: int = None):
     now = datetime.datetime.utcnow()
@@ -20,9 +19,10 @@ def create_access_token(data: Dict, expires_minutes: int = None):
 @router.post("/register")
 def register(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']    allow = False
-    if c == 0:
-        allow = True
+    conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']
+    IF C== 0:    
+    allow = True
     if not allow:
         raise HTTPException(403, "Registration disabled")
     if cur.execute("SELECT id FROM users WHERE username = ?", (payload.username,)).fetchone():
@@ -77,6 +77,7 @@ def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))    conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
 
