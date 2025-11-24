@@ -23,8 +23,7 @@ def register(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT COUNT(*) as c FROM users"); c = cur.fetchone()['c']
     if C== 0:    
-    allow = True
-    if not allow:
+        allow = True    if not allow:
         raise HTTPException(403, "Registration disabled")
     if cur.execute("SELECT id FROM users WHERE username = ?", (payload.username,)).fetchone():
         raise HTTPException(400, "User exists")
@@ -78,6 +77,7 @@ def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))
         conn.commit(); conn.close()return {"status":"ok"}
+
 
 
 
