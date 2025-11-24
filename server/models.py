@@ -1,4 +1,3 @@
-# server/models.py
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
@@ -10,6 +9,7 @@ from typing import Optional, List
 class LoginPayload(BaseModel):
     username: str
     password: str
+    device_id: Optional[str] = None
 
 
 class RefreshPayload(BaseModel):
@@ -67,8 +67,9 @@ class TemplatePayload(BaseModel):
     template_name: str
     variables: Optional[dict]
 
+
 class TemplateGenericPayload(BaseModel):
-        data: Optional[dict]
+    data: Optional[dict]
 
 
 # -------------------------
@@ -80,11 +81,13 @@ class SyncClientPayload(BaseModel):
     version: Optional[str]
     data: Optional[dict]
 
+
 class SyncPushPayload(BaseModel):
-        data: Optional[dict]
+    data: Optional[dict]
+
 
 class SyncPullPayload(BaseModel):
-        data: Optional[dict]
+    data: Optional[dict]
 
 
 class SyncResponse(BaseModel):
@@ -105,5 +108,3 @@ class WhatsAppMessagePayload(BaseModel):
 class WhatsAppTemplatePayload(BaseModel):
     template_id: str
     parameters: List[str]
-
-
