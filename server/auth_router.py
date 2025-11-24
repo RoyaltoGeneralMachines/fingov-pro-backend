@@ -6,8 +6,9 @@ from typing import Dict
 from .models import LoginPayload, RefreshPayload
 from .db import get_conn
 from .utils import hash_password, verify_password, create_refresh_token, SECRET, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-from psycopg2.extras import RealDictCursorrouter = APIRouter()
+from psycopg2.extras import RealDictCursor
 
+router = APIRouter()
 def create_access_token(data: Dict, expires_minutes: int = None):
     now = datetime.datetime.utcnow()
     expire = now + datetime.timedelta(minutes=(expires_minutes or ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -38,8 +39,8 @@ def register(payload: LoginPayload, request: Request=None):
 @router.post("/login")
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))    row = cur.fetchone()
-    if not row or not verify_password(payload.password, row['password_hash']):
+    cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))
+        row = cur.fetchone()if not row or not verify_password(payload.password, row['password_hash']):
         raise HTTPException(401, "Invalid credentials")
     user = dict(row)
     user_data = {"sub": user['username'], "role": user['role'], "user_id": user['id']}
@@ -75,8 +76,9 @@ def refresh_token(payload: RefreshPayload):
 @router.post("/logout")
 def logout(payload: RefreshPayload):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))    conn.commit(); conn.close()
-    return {"status":"ok"}
+    cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))
+        conn.commit(); conn.close()return {"status":"ok"}
+
 
 
 
