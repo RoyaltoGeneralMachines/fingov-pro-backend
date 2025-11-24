@@ -39,8 +39,8 @@ def register(payload: LoginPayload, request: Request=None):
 def login(payload: LoginPayload, request: Request=None):
     conn = get_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT * FROM users WHERE username = ?", (payload.username,))
-    row = cur.fetchone()if not row or not verify_password(payload.password, row['password_hash']):
-        raise HTTPException(401, "Invalid credentials")
+    row = cur.fetchone()
+    if not row or not verify_password(payload.password, row['password_hash']):        raise HTTPException(401, "Invalid credentials")
     user = dict(row)
     user_data = {"sub": user['username'], "role": user['role'], "user_id": user['id']}
     access_token = create_access_token(user_data)
@@ -79,3 +79,4 @@ def logout(payload: RefreshPayload):
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = ?", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
