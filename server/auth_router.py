@@ -27,8 +27,8 @@ def register(payload: LoginPayload, request: Request=None):
     if not allow:
         raise HTTPException(403, "Registration disabled")
     cur.execute("SELECT id FROM users WHERE username = $1", (payload.username,))
-            if cur.fetchone():
-            raise HTTPException(400, "User exists")
+        if cur.fetchone():
+            raise HTTPException(400, "User exists")        
     now = datetime.datetime.utcnow().isoformat()
     role = "ADMIN" if c==0 else "AGENT"
     cur.execute("INSERT INTO users(username,password_hash,full_name,role,created_at) VALUES($1,$2,$3,$4,$5)",
@@ -80,6 +80,7 @@ def logout(payload: RefreshPayload):
     cur.execute("UPDATE refresh_tokens SET revoked = 1 WHERE token = $1", (token,))
     conn.commit(); conn.close()
     return {"status":"ok"}
+
 
 
 
